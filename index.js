@@ -1,20 +1,12 @@
-var express = require('express');
-var app = express();
+'use strict';
 
-app.set('port', (process.env.PORT || 5000));
+const throng = require('throng');
 
-app.use(express.static(__dirname + '/public'));
+const app = require('./app');
+const WORKERS = process.env.WEB_CONCURRENCY || 1;
 
-// views is directory for all template files
-app.set('views', __dirname + '/views');
-app.set('view engine', 'ejs');
-
-app.get('/', function(request, response) {
-  response.render('pages/index');
+throng({
+  workers: WORKERS,
+  lifetime: Infinity,
+  start: app
 });
-
-app.listen(app.get('port'), function() {
-  console.log('Node app is running on port', app.get('port'));
-});
-
-
