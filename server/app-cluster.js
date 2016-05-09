@@ -2,6 +2,9 @@
 
 const express = require('express');
 const morgan = require('morgan');
+// const throng = require('throng');
+const cluster = require('cluster');
+const os = require('os');//no need to download anything
 
 require('dotenv').config();
 
@@ -49,7 +52,25 @@ app.use(function(err, req, res, next) {
 });
 
 
-app.listen(app.get('port'), function () {
-    console.log('Express server listening on %d, in %s mode', app.get('port'), app.get('env'));
-});
+if(cluster.isMaster) {
+   var numWorkers = os.cpus().length;
+   console.log('Master cluster setting up ' + numWorkers + ' workers...');
 
+   for(var i = 0; i < numWorkers; i++) {
+       cluster.fork();
+   }
+
+   cluster.on('online', function(worker) {
+       console.log('Worker ' + worker.process.pid + ' is online');
+   });
+
+   cluster.on('exit', function(worker, code, signal) {
+       console.log('Worker ' + worker.process.pid + ' died with code: ' + code + ', and signal: ' + signal);
+       console.log('Starting a new worker');
+       cluster.fork();
+   });
+} else {
+    app.listen(app.get('port'), function () {
+        console.log('Express server listening on %d, in %s mode', app.get('port'), app.get('env'));
+    });
+};
